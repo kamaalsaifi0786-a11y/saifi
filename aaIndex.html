@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Image Background Remover & Resizer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:linear-gradient(135deg,#1f3c88,#4a69bd);
+}
+.container{
+  max-width:850px;
+  margin:30px auto;
+  background:#fff;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+h1{
+  text-align:center;
+  color:#1f3c88;
+}
+input,button{
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  font-size:16px;
+}
+button{
+  background:#1f3c88;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+button:hover{
+  background:#162b5c;
+}
+.row{
+  display:flex;
+  gap:10px;
+}
+.row input{width:50%;}
+.preview{
+  margin-top:15px;
+  text-align:center;
+}
+.preview img{
+  max-width:100%;
+  border:2px dashed #ccc;
+  padding:10px;
+}
+.footer{
+  text-align:center;
+  margin-top:15px;
+  color:#666;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>AI Background Remover & Image Resizer</h1>
+
+<input type="file" id="imageInput" accept="image/*">
+
+<button onclick="removeBackground()">🧠 Remove Background (AI)</button>
+
+<div class="row">
+  <input type="number" id="width" placeholder="Width (px)">
+  <input type="number" id="height" placeholder="Height (px)">
+</div>
+
+<button onclick="resizeImage()">📐 Resize Image</button>
+
+<button onclick="downloadImage()">⬇️ Download PNG</button>
+
+<div class="preview">
+  <img id="resultImage">
+</div>
+
+<div class="footer">
+Perfect for Photo Studio & Printing Press
+</div>
+</div>
+
+<script>
+let currentImage = null;
+
+// 🔴 REMOVE.BG API KEY YAHAN PASTE KARO
+const API_KEY = "PASTE_YOUR_REMOVEBG_API_KEY";
+
+/* Image upload preview */
+document.getElementById("imageInput").addEventListener("change", function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(){
+    currentImage = reader.result;
+    document.getElementById("resultImage").src = currentImage;
+  };
+  reader.readAsDataURL(file);
+});
+
+/* AI Background Remove */
+function removeBackground(){
+  const file = document.getElementById("imageInput").files[0];
+  if(!file){
+    alert("Pehle image select karo");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("image_file", file);
+  formData.append("size", "auto");
+
+  fetch("https://api.remove.bg/v1.0/removebg",{
+    method:"POST",
+    headers:{ "X-Api-Key": API_KEY },
+    body:formData
+  })
+  .then(res => res.blob())
+  .then(blob => {
+    const reader = new FileReader();
+    reader.onload = function(){
+      currentImage = reader.result;
+      document.getElementById("resultImage").src = currentImage;
+    };
+    reader.readAsDataURL(blob);
+  })
+  .catch(()=>alert("Background remove failed"));
+}
+
+/* Image Resize – FIXED */
+function resizeImage(){
+  if(!currentImage){
+    alert("Image load nahi hui");
+    return;
+  }
+
+  const w = parseInt(document.getElementById("width").value);
+  const h = parseInt(document.getElementById("height").value);
+
+  if(!w || !h){
+    alert("Width aur Height dono bharo");
+    return;
+  }
+
+  const img = new Image();
+  img.onload = function(){
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img,0,0,w,h);
+
+    currentImage = canvas.toDataURL("image/png");
+    document.getElementById("resultImage").src = currentImage;
+  };
+  img.src = currentImage;
+}
+
+/* Download */
+function downloadImage(){
+  if(!currentImage){
+    alert("Download ke liye image nahi hai");
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = currentImage;
+  a.download = "edited-image.png";
+  a.click();
+}
+</script>
+
+</body>
+</html>
